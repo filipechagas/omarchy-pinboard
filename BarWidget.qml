@@ -6,6 +6,7 @@ Ui.BarWidget {
   id: root
   moduleName: "io.github.filipechagas.omapin"
 
+  readonly property bool showIcon: setting("showIcon", true) !== false
   readonly property var pinboardService: bar && bar.shell
     ? bar.shell.serviceFor("io.github.filipechagas.omapin")
     : null
@@ -41,8 +42,8 @@ Ui.BarWidget {
       panelLoader.item.closeForPopoutSwitch()
   }
 
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
+  implicitWidth: showIcon ? button.implicitWidth : 0
+  implicitHeight: showIcon ? button.implicitHeight : 0
 
   onBarChanged: injectPanel()
   onSettingsChanged: injectPanel()
@@ -62,6 +63,7 @@ Ui.BarWidget {
   Ui.BarIconButton {
     id: button
     anchors.fill: parent
+    visible: root.showIcon
     bar: root.bar
     text: "\uf02e"
     active: root.opened
@@ -75,7 +77,7 @@ Ui.BarWidget {
   }
 
   Rectangle {
-    visible: root.pinboardService
+    visible: root.showIcon && root.pinboardService
       && (root.pinboardService.queuePending > 0 || root.pinboardService.queueFailed > 0)
     width: C.Style.space(5)
     height: width

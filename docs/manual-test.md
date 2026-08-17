@@ -8,6 +8,9 @@ Use a disposable Pinboard URL when testing create/update behavior.
 - Enabling the plugin adds one bookmark icon to the requested bar section.
 - Clicking the icon and `omarchy-shell shell toggle io.github.filipechagas.omapin`
   both open and close the panel.
+- Setting `showIcon` to `false` with `omarchy bar set` removes the icon and its
+  bar space while the shell toggle still opens on the focused monitor; setting
+  it back to `true` restores the icon.
 - Escape and an outside click close the panel.
 - Disabling, re-enabling, and restarting the shell preserve the token and queue.
 - A keyboard summon opens on the focused monitor; clicking opens on that bar.

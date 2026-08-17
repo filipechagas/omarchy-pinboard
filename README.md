@@ -59,6 +59,22 @@ o.bind(
 `hl.unbind` line makes the replacement explicit. For another key, unbind that
 chord first when Omarchy already uses it.
 
+### Hide The Bar Icon
+
+Omapin can stay available through the keybinding without taking up space in the
+bar:
+
+```bash
+omarchy bar set io.github.filipechagas.omapin showIcon false --json
+```
+
+The zero-width widget remains loaded so the shortcut, background retries, and
+focused-monitor routing continue to work. To restore the icon:
+
+```bash
+omarchy bar set io.github.filipechagas.omapin showIcon true --json
+```
+
 ## Usage
 
 1. Copy a link and open Omapin. A valid HTTP or HTTPS URL is filled in.

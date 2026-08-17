@@ -7,7 +7,9 @@ Omapin is one Omarchy plugin with two entry points:
 - `Service.qml` is loaded once by the shell. It serializes helper operations,
   owns shared token/queue/tag state, and runs the background retry timer.
 - `BarWidget.qml` is instantiated by each bar surface. It renders the bookmark
-  icon and loads `Panel.qml`, which contains the keyboard-first form.
+  icon and loads `Panel.qml`, which contains the keyboard-first form. Its
+  `showIcon` setting can collapse the bar slot without unloading the widget, so
+  keyboard summons still route to the focused monitor.
 
 `Panel.qml` uses Omarchy's `KeyboardPanel`, `TextField`, `Toggle`, `Button`,
 `BorderSurface`, `Color`, and `Style` primitives. The shell therefore owns
