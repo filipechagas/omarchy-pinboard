@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.filipechagas.omapin",
+  "name": "Omapin",
+  "version": "0.1.0",
+  "author": "Filipe Chagas",
+  "description": "Keyboard-first Pinboard capture for Omarchy",
+  "license": "MIT",
+  "homepage": "https://github.com/filipechagas/omarchy-pinboard",
+  "repository": "https://github.com/filipechagas/omarchy-pinboard",
+  "keywords": [
+    "pinboard",
+    "bookmarks",
+    "productivity"
+  ],
+  "kinds": [
+    "service",
+    "bar-widget"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Omapin",
+    "description": "Add and update Pinboard bookmarks",
+    "category": "Productivity",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
