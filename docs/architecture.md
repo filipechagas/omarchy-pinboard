@@ -24,6 +24,10 @@ new token long enough to hand it to the helper, then clears the editor and job
 payload. The boundary keeps it out of durable shell state and visible process
 arguments.
 
+The service resolves the helper relative to `Service.qml`. Omarchy's public
+manifest for third-party plugins omits the private `__sourceDir` field, so the
+helper path must not depend on that field.
+
 The helper owns:
 
 - Secret Service lookup, migration, storage, and deletion through
@@ -37,7 +41,8 @@ The helper owns:
 Every operation starts a fresh process. Pinboard pacing and queued work remain
 correct across processes because the helper uses locked, persistent state. The
 service terminates a helper that runs for more than 30 seconds and recovers from
-process launch failures without blocking later jobs.
+process launch failures without blocking later jobs. The panel also lets the
+user stop waiting for a token request if its response is lost.
 
 Title discovery deliberately accepts local and private-network HTTP URLs because
 Omapin is a desktop bookmark client, not a remote fetch service. Requests remain

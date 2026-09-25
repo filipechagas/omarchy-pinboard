@@ -49,6 +49,7 @@ Ui.Panel {
     + "-" + Math.floor(Math.random() * 0x1000000).toString(36)
   readonly property bool tokenConfigured: service ? !!service.tokenConfigured : false
   readonly property bool serviceReady: service ? !!service.ready : false
+  readonly property bool checkingToken: service && !serviceReady && !service.initializationError
   readonly property color foreground: C.Color.popups.text
   readonly property color muted: C.Color.muted
   readonly property color accent: C.Color.accent
@@ -306,6 +307,14 @@ Ui.Panel {
     }
   }
 
+  function stopWaitingForToken() {
+    if (!tokenBusy) return
+    tokenBusy = false
+    setStatus("The keyring request has not finished. You can try again; any late result will still update Omapin.", "error")
+    if (service && !service.hasOperation("status"))
+      service.request("status", {}, "service:status", 190)
+  }
+
   function submitBookmark() {
     if (submitting) return
     if (!tokenConfigured) {
@@ -542,6 +551,12 @@ Ui.Panel {
     }
   }
 
+  Timer {
+    interval: 35000
+    running: root.tokenBusy
+    onTriggered: root.stopWaitingForToken()
+  }
+
   Ui.KeyboardPanel {
     id: popup
     anchorItem: root.anchorItem
@@ -716,8 +731,8 @@ Ui.Panel {
                   id: authBadge
                   anchors.right: parent.right
                   anchors.verticalCenter: parent.verticalCenter
-                  text: root.tokenConfigured ? "CONFIGURED" : "REQUIRED"
-                  color: root.tokenConfigured ? root.accent : root.urgent
+                  text: root.checkingToken ? "CHECKING" : (root.tokenConfigured ? "CONFIGURED" : "REQUIRED")
+                  color: root.checkingToken ? root.muted : (root.tokenConfigured ? root.accent : root.urgent)
                   font.family: root.fontFamily
                   font.pixelSize: C.Style.font.caption
                   font.bold: true
@@ -727,9 +742,11 @@ Ui.Panel {
 
               Text {
                 width: parent.width
-                text: root.tokenConfigured
-                  ? "Replace your token or log out. Credentials stay in Secret Service."
-                  : "Add username:TOKEN once. Omapin stores it in your system keyring."
+                text: root.checkingToken
+                  ? "Checking the system keyring for your Pinboard token..."
+                  : (root.tokenConfigured
+                     ? "Replace your token or log out. Credentials stay in Secret Service."
+                     : "Add username:TOKEN once. Omapin stores it in your system keyring.")
                 color: root.muted
                 font.family: root.fontFamily
                 font.pixelSize: C.Style.font.bodySmall
@@ -739,7 +756,7 @@ Ui.Panel {
               Ui.TextField {
                 id: tokenField
                 width: parent.width
-                enabled: !root.tokenBusy
+                enabled: !root.tokenBusy && !root.checkingToken
                 password: true
                 placeholderText: "username:TOKEN"
                 foreground: root.foreground
@@ -758,11 +775,21 @@ Ui.Panel {
                   bordered: true
                   selected: true
                   focusable: true
-                  enabled: !root.tokenBusy
+                  enabled: !root.tokenBusy && !root.checkingToken
                   opacity: enabled ? 1 : 0.45
                   foreground: root.foreground
                   fontFamily: root.fontFamily
                   onClicked: root.saveToken()
+                }
+
+                Ui.Button {
+                  visible: root.tokenBusy
+                  text: "Stop waiting"
+                  bordered: true
+                  focusable: true
+                  foreground: root.foreground
+                  fontFamily: root.fontFamily
+                  onClicked: root.stopWaitingForToken()
                 }
 
                 Ui.Button {

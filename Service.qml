@@ -23,13 +23,10 @@ Item {
   property bool initialized: false
   property bool helperStarted: false
   property bool helperTimedOut: false
+  property int helperTimeoutMs: 30000
 
-  readonly property string pluginDir: manifest && manifest.__sourceDir
-    ? String(manifest.__sourceDir)
-    : ""
-  readonly property string helperPath: pluginDir !== ""
-    ? pluginDir.replace(/\/$/, "") + "/scripts/pinboard_helper.py"
-    : ""
+  property string helperPath: decodeURIComponent(
+    String(Qt.resolvedUrl("scripts/pinboard_helper.py")).replace(/^file:\/\//, ""))
   readonly property int queuePending: countQueueStatus("pending")
   readonly property int queueFailed: countQueueStatus("failed")
 
@@ -296,16 +293,15 @@ Item {
 
   Timer {
     id: helperTimeout
-    interval: 30000
+    objectName: "helperTimeout"
+    interval: root.helperTimeoutMs
     onTriggered: {
       if (!root.activeJob) return
-      if (!helperProc.running || helperProc.processId === null) {
-        if (!root.helperStarted) root.finishActive(127)
-        return
-      }
       root.helperTimedOut = true
       root.operationError = "Omapin helper timed out."
-      helperProc.signal(9)
+      if (helperProc.running && helperProc.processId !== null)
+        helperProc.signal(9)
+      root.finishActive(127)
     }
   }
 
@@ -347,12 +343,17 @@ Item {
           if (!helperProc.running && root.activeJob && !root.helperStarted)
             root.finishActive(127)
         })
+      } else if (!running && !root.activeJob) {
+        Qt.callLater(root.startNext)
       }
     }
 
     onExited: function(exitCode) {
-      helperTimeout.stop()
-      Qt.callLater(function() { root.finishActive(exitCode) })
+      var exitedJob = root.activeJob
+      Qt.callLater(function() {
+        if (exitedJob && root.activeJob === exitedJob) root.finishActive(exitCode)
+        else root.startNext()
+      })
     }
   }
 }
