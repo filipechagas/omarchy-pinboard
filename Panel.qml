@@ -27,6 +27,7 @@ Ui.Panel {
   property string statusText: ""
   property string statusKind: "info"
   property var suggestions: ({ recommended: [], popular: [] })
+  property string suggestionsError: ""
   property var inspectionSnapshot: null
   property int inspectionSerial: 0
   property int requestSerial: 0
@@ -63,6 +64,8 @@ Ui.Panel {
   readonly property bool autocompleteVisible: tagsField.activeFocus
     && !autocompleteDismissed
     && autocompleteOptions.length > 0
+  readonly property bool loadingUserTags: service ? service.hasOperation("tags") : false
+  readonly property string userTagsError: service ? String(service.userTagsError || "") : ""
   readonly property bool formBusy: submitting || tokenBusy
   readonly property bool canSubmit: tokenConfigured
     && !formBusy
@@ -163,6 +166,7 @@ Ui.Panel {
     applyingRemoteValues = false
     intent = "create"
     suggestions = ({ recommended: [], popular: [] })
+    suggestionsError = ""
     inspectionSnapshot = null
     lastInspectedUrl = ""
     loadedBookmarkUrl = ""
@@ -184,6 +188,7 @@ Ui.Panel {
     inspectingSuggestions = false
     loadingTitle = false
     suggestions = ({ recommended: [], popular: [] })
+    suggestionsError = ""
 
     if (intent === "update") {
       applyingRemoteValues = true
@@ -235,6 +240,7 @@ Ui.Panel {
 
     lastInspectedUrl = url
     setStatus("")
+    suggestionsError = ""
     automaticTitle = ""
     inspectionSnapshot = {
       serial: serial,
@@ -282,6 +288,16 @@ Ui.Panel {
     tagsField.cursorPosition = tagsField.text.length
     activeAutocompleteIndex = 0
     return true
+  }
+
+  function retryTags() {
+    if (!service || !tokenConfigured) return
+    if (userTagsError !== "") service.loadUserTags(nextRequestId("tags"))
+    if (suggestionsError !== "" && inspectionIsCurrent() && !inspectingSuggestions) {
+      suggestionsError = ""
+      inspectingSuggestions = true
+      suggestionsRequestId = request("suggest", { url: inspectionSnapshot.url }, "suggest-" + inspectionSerial, 50)
+    }
   }
 
   function saveToken() {
@@ -412,8 +428,10 @@ Ui.Panel {
     if (!inspectionIsCurrent()) return
     if (!result || !result.ok) {
       suggestions = ({ recommended: [], popular: [] })
+      suggestionsError = String(result && result.error || "Could not load URL tag suggestions.")
       return
     }
+    suggestionsError = ""
     suggestions = {
       recommended: result.recommended || [],
       popular: result.popular || []
@@ -532,6 +550,7 @@ Ui.Panel {
   onAutocompleteOptionsChanged: {
     if (activeAutocompleteIndex >= autocompleteOptions.length)
       activeAutocompleteIndex = 0
+    if (autocompleteVisible) reveal(autocompleteList)
   }
 
   onServiceChanged: {
@@ -1001,15 +1020,17 @@ Ui.Panel {
               onActiveFocusChanged: {
                 if (activeFocus) {
                   root.autocompleteDismissed = false
-                  root.reveal(this)
+                  root.reveal(root.autocompleteVisible ? autocompleteList : this)
                 }
               }
             }
 
             Column {
+              id: autocompleteList
               visible: root.autocompleteVisible
               width: parent.width
               spacing: C.Style.spacing.xs
+              onHeightChanged: if (visible) root.reveal(this)
 
               Repeater {
                 model: root.autocompleteOptions
@@ -1033,6 +1054,37 @@ Ui.Panel {
                   }
                 }
               }
+            }
+
+            Text {
+              visible: root.loadingUserTags || root.inspectingSuggestions
+                || root.userTagsError !== "" || root.suggestionsError !== ""
+              width: parent.width
+              text: {
+                var parts = []
+                if (root.loadingUserTags) parts.push("Loading your Pinboard tags...")
+                else if (root.userTagsError !== "") parts.push("Your tags: " + root.userTagsError)
+                if (root.inspectingSuggestions) parts.push("Loading URL tag suggestions...")
+                else if (root.suggestionsError !== "") parts.push("URL suggestions: " + root.suggestionsError)
+                return parts.join("\n")
+              }
+              color: root.userTagsError !== "" || root.suggestionsError !== "" ? root.urgent : root.muted
+              font.family: root.fontFamily
+              font.pixelSize: C.Style.font.caption
+              wrapMode: Text.WordWrap
+            }
+
+            Ui.Button {
+              visible: root.userTagsError !== "" || root.suggestionsError !== ""
+              text: "Retry tags"
+              bordered: true
+              focusable: true
+              enabled: !root.loadingUserTags && !root.inspectingSuggestions
+              opacity: enabled ? 1 : 0.45
+              foreground: root.foreground
+              fontFamily: root.fontFamily
+              onClicked: root.retryTags()
+              onActiveFocusChanged: if (activeFocus) root.reveal(this)
             }
 
             Column {

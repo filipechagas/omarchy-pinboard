@@ -13,6 +13,7 @@ Item {
   property string initializationError: ""
   property var userTags: []
   property bool userTagsLoaded: false
+  property string userTagsError: ""
   property var queueItems: []
 
   property var pendingJobs: []
@@ -125,7 +126,9 @@ Item {
 
   function loadUserTags(requestId) {
     if (!tokenConfigured || userTagsLoaded || hasOperation("tags")) return ""
-    return request("tags", {}, requestId || "service:tags", 20)
+    userTagsError = ""
+    // Autocomplete should be ready before the optional URL recommendations.
+    return request("tags", {}, requestId || "service:tags", 85)
   }
 
   function startNext() {
@@ -211,6 +214,7 @@ Item {
         if (!tokenConfigured || accountChanged) {
           userTags = []
           userTagsLoaded = false
+          userTagsError = ""
         }
         if (!tokenConfigured || accountChanged) cancelAuthenticatedJobs()
       } else {
@@ -219,6 +223,7 @@ Item {
         accountName = ""
         userTags = []
         userTagsLoaded = false
+        userTagsError = ""
         queueItems = []
         initializationError = String(result.error || "Could not initialize Omapin.")
         cancelAuthenticatedJobs()
@@ -231,6 +236,7 @@ Item {
       initializationError = ""
       userTags = []
       userTagsLoaded = false
+      userTagsError = ""
     } else if (operation === "clear-token" && result.ok) {
       cancelAuthenticatedJobs()
       ready = true
@@ -239,9 +245,16 @@ Item {
       initializationError = ""
       userTags = []
       userTagsLoaded = false
-    } else if (operation === "tags" && result.ok) {
-      userTags = result.tags || []
-      userTagsLoaded = true
+      userTagsError = ""
+    } else if (operation === "tags") {
+      if (result.ok) {
+        userTags = result.tags || []
+        userTagsLoaded = true
+        userTagsError = ""
+      } else {
+        userTagsLoaded = false
+        userTagsError = String(result.error || "Could not load your Pinboard tags.")
+      }
     }
 
     if (!result.ok && result.code === "not_authenticated") {
@@ -251,6 +264,7 @@ Item {
       initializationError = ""
       userTags = []
       userTagsLoaded = false
+      userTagsError = ""
       queueItems = []
       cancelAuthenticatedJobs()
     } else if (!result.ok && [
@@ -264,12 +278,12 @@ Item {
       initializationError = String(result.error || "Secure token storage is unavailable.")
       userTags = []
       userTagsLoaded = false
+      userTagsError = ""
       queueItems = []
       cancelAuthenticatedJobs()
     }
 
     if (operation === "submit" && result.ok && !result.queued) {
-      userTags = []
       userTagsLoaded = false
     }
     if ((operation === "queue-retry-due" || operation === "queue-retry-now")
