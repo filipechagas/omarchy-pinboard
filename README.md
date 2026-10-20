@@ -146,3 +146,12 @@ cause a nonzero exit.
 See [`docs/architecture.md`](docs/architecture.md) for the runtime design and
 [`docs/research.md`](docs/research.md) for source material used by the port.
 Release checks are listed in [`docs/manual-test.md`](docs/manual-test.md).
+
+### Release
+
+In OpenCode, run `/release` after finishing a change, or `/release 0.2.0` to
+choose the version. The [repo-local release skill](.agents/skills/release/SKILL.md)
+checks the change, commits and pushes, publishes a GitHub release, and submits
+its exact commit for marketplace verification. Final marketplace publication
+requires maintainer approval. Quit and restart OpenCode after first adding the
+skill and command so they are loaded.
